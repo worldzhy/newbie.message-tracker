@@ -34,6 +34,6 @@ export class MessageTrackerService {
       }
     });
 
-    return messageIdAndStatusMap.keys();
+    return Object.fromEntries(messageIdAndStatusMap);
   }
 }
