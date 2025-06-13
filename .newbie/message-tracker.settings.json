@@ -1,0 +1,8 @@
+{
+  "config-service": {
+    "message-tracker": {}
+  },
+  "env": {},
+  "dependencies": {},
+  "devDependencies": {}
+}

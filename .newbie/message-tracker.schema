@@ -1,0 +1,60 @@
+// ! ------------------------------------------------------------ //
+// !             [Microservice] Message Tracker models            //
+// ! ------------------------------------------------------------ //
+// * MessageGroup                                                 //
+// * Message                                                      //
+// * MessageEvent                                                 //
+// * ⌄ ⌄ ⌄ ⌄ ⌄ ⌄ ⌄ ⌄ ⌄ ⌄ ⌄ ⌄ ⌄ ⌄ ⌄ ⌄ ⌄ ⌄ ⌄ ⌄ ⌄ ⌄ ⌄ ⌄ ⌄ ⌄ ⌄ ⌄ ⌄ ⌄  //
+
+model MessageGroup {
+  id           Int       @id @default(autoincrement())
+  emailSubject String?
+  emailContent String?
+  smsContent   String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  messages     Message[]
+
+  @@schema("microservice/message-tracker")
+}
+
+model Message {
+  id                      Int            @id @default(autoincrement())
+  status                  String?
+  type                    MessageType
+  level                   Int? // 1 - first level queue, 2 - second level queue
+  destination             String?
+  content                 String?
+  sqsMessageId            String // When the ReceiveCount for a message exceeds the maxReceiveCount for a queue, SQS moves the message to the DLQ. The original message ID is retained.
+  sqsMessageBody          Json
+  pinpointMessageId       String?
+  pinpointMessageStatus   Int?
+  pinpointMessageResponse Json?
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @updatedAt
+  events                  MessageEvent[]
+  messageGroupId          Int?
+  messageGroup            MessageGroup?  @relation(fields: [messageGroupId], references: [id])
+
+  @@schema("microservice/message-tracker")
+}
+
+model MessageEvent {
+  id                Int      @id @default(autoincrement())
+  eventType         String?
+  event             Json?
+  createdAt         DateTime @default(now())
+  pinpointMessageId String
+  messageId         Int?
+  message           Message?  @relation(fields: [messageId], references: [id])
+
+  @@schema("microservice/message-tracker")
+}
+
+enum MessageType {
+  EMAIL
+  SMS
+  UNKNOWN
+
+  @@schema("microservice/message-tracker")
+}
