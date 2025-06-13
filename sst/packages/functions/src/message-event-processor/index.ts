@@ -66,20 +66,13 @@ export const handler: S3Handler = async event => {
       }
 
       pinpointMessageEvents.push({
-        eventType: event_type,
         event: {
           ...originalEvent,
-          event_timestamp: originalEvent.event_timestamp
-            ? moment(originalEvent.event_timestamp).format(
-                'YYYY-MM-DD HH:mm:ss'
-              )
-            : null,
-          arrival_timestamp: originalEvent.arrival_timestamp
-            ? moment(originalEvent.arrival_timestamp).format(
-                'YYYY-MM-DD HH:mm:ss'
-              )
-            : null,
+          event_timestamp: moment(originalEvent.event_timestamp).toDate(),
+          arrival_timestamp: moment(originalEvent.arrival_timestamp).toDate(),
         },
+        eventType: event_type,
+        eventTime: moment(originalEvent.event_timestamp).toDate(),
         pinpointMessageId: pinpointMessageId,
       });
     }

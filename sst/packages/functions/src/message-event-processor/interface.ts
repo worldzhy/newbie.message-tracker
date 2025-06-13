@@ -1,7 +1,7 @@
 export interface OriginalPinpointMessageEvent {
   event_type: string;
-  event_timestamp?: number;
-  arrival_timestamp?: number;
+  event_timestamp: number;
+  arrival_timestamp: number;
   event_version?: string;
   application?: any;
   client?: any;
@@ -14,8 +14,9 @@ export interface OriginalPinpointMessageEvent {
 }
 
 export interface MessageEventCreateInput {
-  eventType: string;
   event: {};
+  eventType: string;
+  eventTime: Date;
   pinpointMessageId: string;
   messageId?: number;
 }

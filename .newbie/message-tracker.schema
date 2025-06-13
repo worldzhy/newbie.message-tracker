@@ -41,12 +41,13 @@ model Message {
 
 model MessageEvent {
   id                Int      @id @default(autoincrement())
-  eventType         String?
-  event             Json?
+  event             Json
+  eventType         String
+  eventTime         DateTime
   createdAt         DateTime @default(now())
   pinpointMessageId String
   messageId         Int?
-  message           Message?  @relation(fields: [messageId], references: [id])
+  message           Message? @relation(fields: [messageId], references: [id])
 
   @@schema("microservice/message-tracker")
 }
