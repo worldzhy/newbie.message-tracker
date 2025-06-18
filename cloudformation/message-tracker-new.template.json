@@ -279,7 +279,7 @@
         "ExtendedS3DestinationConfiguration": {
           "BucketARN": {"Fn::GetAtt": ["EventStreamS3", "Arn"]},
           "BufferingHints": {
-            "IntervalInSeconds": 300,
+            "IntervalInSeconds": 60,
             "SizeInMBs": 5
           },
           "CloudWatchLoggingOptions": {
