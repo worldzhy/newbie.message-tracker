@@ -19,11 +19,8 @@ export default {
         DB_SSL: process.env.DB_SSL || 'false',
 
         AWS_PINPOINT_REGION: process.env.AWS_PINPOINT_REGION!,
-        AWS_PINPOINT_FROM_EMAIL_ADDRESS:
-          process.env.AWS_PINPOINT_FROM_EMAIL_ADDRESS!,
-        MESSAGE_TRACKER_ADMIN_EMAIL_ADDRESS:
-          process.env.MESSAGE_TRACKER_ADMIN_EMAIL_ADDRESS || '',
-        MESSAGE_SENDER_LEVEL: process.env.MESSAGE_SENDER_LEVEL || '1', // 默认级别为 1
+        FROM_EMAIL_ADDRESS: process.env.FROM_EMAIL_ADDRESS!,
+        ADMIN_EMAIL_ADDRESS: process.env.ADMIN_EMAIL_ADDRESS || '',
       };
 
       // Create the  message sender function
@@ -47,8 +44,8 @@ export default {
         }
       );
 
-      // Create the failed event processor function
-      const failedEventProcessor = new Function(
+      // Create the failed message processor function
+      const failedMessageProcessor = new Function(
         stack,
         'FailedMessageProcessor',
         {
@@ -63,7 +60,7 @@ export default {
       stack.addOutputs({
         messageSenderArn: messageSender.functionArn,
         messageEventProcessorArn: messageEventProcessor.functionArn,
-        failedEventProcessorArn: failedEventProcessor.functionArn,
+        failedMessageProcessorArn: failedMessageProcessor.functionArn,
       });
     });
   },

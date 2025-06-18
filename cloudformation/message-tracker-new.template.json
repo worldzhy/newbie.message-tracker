@@ -29,17 +29,28 @@
       "ConstraintDescription": "[1] Must contain 1 to 63 letters, numbers, or underscores. [2] Must begin with a letter or an underscore. Subsequent characters can be letters, underscores, or digits (0-9). [3] Can't be a word reserved by the specified database engine."
     },
 
-    "PinpointApplicationName": {
-      "Description": "Name of the Pinpoint application level 1.",
+    "AwsPinpointRegion": {
+      "Description": "Region of the Pinpoint application.",
       "Type": "String",
-      "Default": "MessageTracker-pinpoint-level1"
+      "Default": "us-east-1",
+      "AllowedValues": ["cn-northwest-1", "us-east-1", "us-west-2"],
+      "ConstraintDescription": "Must be a valid AWS region."
+    },
+    "PinpointApplicationName": {
+      "Description": "Name of the Pinpoint application.",
+      "Type": "String",
+      "Default": "MessageTracker"
     },
     "SESIdentityARN": {
       "Description": "This is the FromAddress ARN. It is required during creating Pinpoint Email Channel.",
       "Type": "String"
     },
-    "FromAddress": {
+    "FromEmailAddress": {
       "Description": "Address that has been verified in SES.",
+      "Type": "String"
+    },
+    "AdminEmailAddress": {
+      "Description": "Address that will receive alarm emails.",
       "Type": "String"
     },
 
@@ -51,7 +62,7 @@
     "EventStreamS3BucketName": {
       "Description": "Name of Event stream bucket which should be between 3 and 63 characters long.",
       "Type": "String",
-      "Default": "MessageTracker-eventstream-bucket"
+      "Default": "message-tracker-eventstream-bucket"
     },
     "EventStreamS3Prefix": {
       "Description": "Name of the bucket using to store event stream.",
@@ -187,12 +198,13 @@
             "DB_PORT": {"Ref": "DatabasePort"},
             "DB_USER": {"Ref": "DatabaseMasterUsername"},
             "DB_PWD": {"Ref": "DatabaseMasterUserPassword"},
-            "DB_NAME": {"Ref": "DatabaseName"}
+            "DB_NAME": {"Ref": "DatabaseName"},
+            "DB_SSL": true
           }
         },
         "FunctionName": {"Ref": "PinpointEventProcessorLambdaName"},
-        "Handler": "index.handler",
-        "MemorySize": 128,
+        "Handler": "packages/functions/src/message-event-processor/index.handler",
+        "MemorySize": 256,
         "PackageType": "Zip",
         "Role": {"Fn::GetAtt": ["MessageEventProcessorLambdaRole", "Arn"]},
         "Runtime": "nodejs22.x",
@@ -346,7 +358,7 @@
       "Properties": {
         "ApplicationId": {"Ref": "PinpointApplication"},
         "Enabled": true,
-        "FromAddress": {"Ref": "FromAddress"},
+        "FromAddress": {"Ref": "FromEmailAddress"},
         "Identity": {"Ref": "SESIdentityARN"},
         "RoleArn": {"Fn::GetAtt": ["PinpointEmailChannelRole", "Arn"]}
       },
@@ -461,7 +473,7 @@
               "Statement": [
                 {
                   "Effect": "Allow",
-                  "Action": ["mobiletargeting:*"],
+                  "Action": ["ses:SendEmail"],
                   "Resource": "*"
                 }
               ]
@@ -486,16 +498,17 @@
             "DB_USER": {"Ref": "DatabaseMasterUsername"},
             "DB_PWD": {"Ref": "DatabaseMasterUserPassword"},
             "DB_NAME": {"Ref": "DatabaseName"},
-            "PINPOINT_APP_ID": {"Ref": "PinpointApplication"},
-            "FROM_EMAIL_ADDRESS": {"Ref": "FromAddress"},
-            "ALARM_TO_EMAIL_ADDRESS": ""
+            "DB_SSL": true,
+            "AWS_PINPOINT_REGION": {"Ref": "AwsPinpointRegion"},
+            "FROM_EMAIL_ADDRESS": {"Ref": "FromEmailAddress"},
+            "ADMIN_EMAIL_ADDRESS": {"Ref": "AdminEmailAddress"}
           }
         },
         "FunctionName": {
           "Ref": "FailedMessageProcessorLambdaName"
         },
-        "Handler": "index.handler",
-        "MemorySize": 128,
+        "Handler": "packages/functions/src/failed-message-processor/index.handler",
+        "MemorySize": 256,
         "PackageType": "Zip",
         "Role": {"Fn::GetAtt": ["FailedMessageProcessorLambdaRole", "Arn"]},
         "Runtime": "nodejs22.x",
@@ -561,20 +574,20 @@
         "Description": "It receives SQS messages to send emails or sms.",
         "Environment": {
           "Variables": {
-            "MESSAGE_TYPE": "email",
-            "SHOOTER_LEVEL": 1,
             "DB_HOST": {"Ref": "DatabaseHost"},
             "DB_PORT": {"Ref": "DatabasePort"},
             "DB_USER": {"Ref": "DatabaseMasterUsername"},
             "DB_PWD": {"Ref": "DatabaseMasterUserPassword"},
             "DB_NAME": {"Ref": "DatabaseName"},
-            "PINPOINT_APP_ID": {"Ref": "PinpointApplication"},
-            "FROM_EMAIL_ADDRESS": {"Ref": "FromAddress"}
+            "DB_SSL": true,
+            "AWS_PINPOINT_REGION": {"Ref": "AwsPinpointRegion"},
+            "FROM_EMAIL_ADDRESS": {"Ref": "FromEmailAddress"},
+            "ADMIN_EMAIL_ADDRESS": {"Ref": "AdminEmailAddress"}
           }
         },
         "FunctionName": {"Ref": "EmailSenderLambdaName"},
-        "Handler": "index.handler",
-        "MemorySize": 128,
+        "Handler": "packages/functions/src/message-sender/index.handler",
+        "MemorySize": 256,
         "PackageType": "Zip",
         "Role": {"Fn::GetAtt": ["EmailSenderLambdaRole", "Arn"]},
         "Runtime": "nodejs22.x",
@@ -640,20 +653,18 @@
         "Description": "It receives SQS messages to send text.",
         "Environment": {
           "Variables": {
-            "MESSAGE_TYPE": "email",
-            "SHOOTER_LEVEL": 1,
             "DB_HOST": {"Ref": "DatabaseHost"},
             "DB_PORT": {"Ref": "DatabasePort"},
             "DB_USER": {"Ref": "DatabaseMasterUsername"},
             "DB_PWD": {"Ref": "DatabaseMasterUserPassword"},
             "DB_NAME": {"Ref": "DatabaseName"},
-            "PINPOINT_APP_ID": {"Ref": "PinpointApplication"},
-            "FROM_EMAIL_ADDRESS": {"Ref": "FromAddress"}
+            "DB_SSL": true,
+            "AWS_PINPOINT_REGION": {"Ref": "AwsPinpointRegion"}
           }
         },
         "FunctionName": {"Ref": "TextSenderLambdaName"},
-        "Handler": "index.handler",
-        "MemorySize": 128,
+        "Handler": "packages/functions/src/message-sender/index.handler",
+        "MemorySize": 256,
         "PackageType": "Zip",
         "Role": {"Fn::GetAtt": ["TextSenderLambdaRole", "Arn"]},
         "Runtime": "nodejs22.x",

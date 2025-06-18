@@ -13,7 +13,7 @@ export const handler: SQSHandler = async event => {
   // Initialize services
   const db = new Database();
   const email = new EmailService();
-  const adminEmailAddress = process.env.MESSAGE_TRACKER_ADMIN_EMAIL_ADDRESS!;
+  const adminEmailAddress = process.env.ADMIN_EMAIL_ADDRESS!;
 
   // Function to store SQS message in the database
   const markFailedMessages = async (sqsMessageIds: string[]) => {

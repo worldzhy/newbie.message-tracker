@@ -40,17 +40,17 @@
     "PinpointAlarmAppName": {
       "Description": "Name of the Pinpoint application for alarming.",
       "Type": "String",
-      "Default": "inceptionpad-message-service-pinpoint-alarm"
+      "Default": "message-tracker-alarm"
     },
     "PinpointLevel1AppName": {
       "Description": "Name of the Pinpoint application level 1.",
       "Type": "String",
-      "Default": "inceptionpad-message-service-pinpoint-level1"
+      "Default": "message-tracker-level1"
     },
     "PinpointLevel2AppName": {
       "Description": "Name of the Pinpoint application level 2.",
       "Type": "String",
-      "Default": "inceptionpad-message-service-pinpoint-level2"
+      "Default": "message-tracker-level2"
     },
 
     "LambdaCodeS3BucketName": {
@@ -61,7 +61,7 @@
     "EventStreamS3BucketName": {
       "Description": "Name of Event stream bucket which should be between 3 and 63 characters long.",
       "Type": "String",
-      "Default": "inceptionpad-message-service-eventstream-bucket"
+      "Default": "message-tracker-eventstream-bucket"
     },
     "EventStreamS3Prefix": {
       "Description": "Name of the bucket using to store event stream.",
@@ -77,59 +77,59 @@
     "PinpointEventDeliveryStreamName": {
       "Description": "Name of the Pinpoint message event stream.",
       "Type": "String",
-      "Default": "inceptionpad-message-service-pinpointevent-deliverystream"
+      "Default": "message-tracker-pinpointevent-deliverystream"
     },
     "PinpointEventProcessorLambdaName": {
       "Description": "Name of the pinpoint events processor Lambda.",
       "Type": "String",
-      "Default": "inceptionpad-message-service-pinpoint-event-processor"
+      "Default": "message-tracker-event-processor"
     },
     "PinpointEventProcessorLambdaCodeArchiveName": {
-      "Description": "Path and file name of the alarm Lambda code zip. Example: If s3://aws-quickstart-067174804713/quickstart-message-tracker/pinpoint-event-receiver.zip , then fill 'quickstart-message-tracker/pinpoint-event-receiver.zip'",
+      "Description": "Path and file name of the alarm Lambda code zip. Example: If s3://aws-quickstart-067174804713/message-tracker-functions/message-event-processor.zip , then fill 'message-tracker-functions/message-event-processor.zip'",
       "Type": "String",
-      "Default": "quickstart-message-tracker/codes/pinpoint-event-receiver.zip"
+      "Default": "message-tracker-functions/message-event-processor.zip"
     },
 
     "FinalDeadLetterSQSName": {
       "Description": "Name of the final dead-letter SQS.",
       "Type": "String",
-      "Default": "inceptionpad-message-service-final-deadletter-queue"
+      "Default": "message-tracker-final-deadletter-queue"
     },
     "AlarmLambdaName": {
       "Description": "Name of the alarm Lambda.",
       "Type": "String",
-      "Default": "inceptionpad-message-service-alarm-function"
+      "Default": "message-tracker-alarm-function"
     },
     "AlarmLambdaCodeArchiveName": {
       "Description": "File name of the alarm Lambda code zip. Example: code-alarm-function.zip",
       "Type": "String",
-      "Default": "quickstart-message-tracker/codes/alarm-message-sender.zip"
+      "Default": "message-tracker-functions/failed-message-processor.zip"
     },
 
     "EmailSQSLevel2Name": {
       "Description": "Name of the SQS level 2.",
       "Type": "String",
-      "Default": "inceptionpad-message-service-email-queue-level2"
+      "Default": "message-tracker-email-queue-level2"
     },
     "EmailSQSLevel1Name": {
       "Description": "Name of the SQS level 1.",
       "Type": "String",
-      "Default": "inceptionpad-message-service-email-queue-level1"
+      "Default": "message-tracker-email-queue-level1"
     },
     "EmailShooterLevel1LambdaName": {
       "Description": "Name of the email shooter level 1 Lambda.",
       "Type": "String",
-      "Default": "inceptionpad-message-service-email-shooter-level1"
+      "Default": "message-tracker-email-shooter-level1"
     },
     "EmailShooterLevel2LambdaName": {
       "Description": "Name of the email shooter level 2 Lambda.",
       "Type": "String",
-      "Default": "inceptionpad-message-service-email-shooter-level2"
+      "Default": "message-tracker-email-shooter-level2"
     },
     "MessageShooterLambdaCodeArchiveName": {
       "Description": "File name of the alarm Lambda code zip. Example: code-message-shooter.zip",
       "Type": "String",
-      "Default": "quickstart-message-tracker/codes/pinpoint-message-sender.zip"
+      "Default": "message-tracker-functions/message-sender.zip"
     }
   },
   "Resources": {
@@ -175,7 +175,7 @@
         },
         "Policies": [
           {
-            "PolicyName": "inceptionpad-message-service-deliverystream-role",
+            "PolicyName": "message-tracker-deliverystream-role",
             "PolicyDocument": {
               "Version": "2012-10-17",
               "Statement": [
@@ -257,7 +257,7 @@
         },
         "Policies": [
           {
-            "PolicyName": "inceptionpad-message-service-pinpoint-emailchannel-role",
+            "PolicyName": "message-tracker-emailchannel-role",
             "PolicyDocument": {
               "Version": "2012-10-17",
               "Statement": [
@@ -355,7 +355,7 @@
         },
         "Policies": [
           {
-            "PolicyName": "inceptionpad-message-service-pinpoint-level1-role",
+            "PolicyName": "message-tracker-level1-role",
             "PolicyDocument": {
               "Version": "2012-10-17",
               "Statement": [
@@ -407,7 +407,7 @@
         },
         "Policies": [
           {
-            "PolicyName": "inceptionpad-message-service-pinpoint-level2-role",
+            "PolicyName": "message-tracker-level2-role",
             "PolicyDocument": {
               "Version": "2012-10-17",
               "Statement": [
@@ -479,7 +479,7 @@
         ],
         "Policies": [
           {
-            "PolicyName": "inceptionpad-message-service-alarm-lambda-role",
+            "PolicyName": "message-tracker-alarm-lambda-role",
             "PolicyDocument": {
               "Version": "2012-10-17",
               "Statement": [
@@ -559,7 +559,7 @@
         ],
         "Policies": [
           {
-            "PolicyName": "inceptionpad-message-service-shooter-lambda-role",
+            "PolicyName": "message-tracker-shooter-lambda-role",
             "PolicyDocument": {
               "Version": "2012-10-17",
               "Statement": [

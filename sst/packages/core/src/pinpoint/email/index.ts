@@ -25,14 +25,14 @@ export class EmailService {
   constructor(
     config: EmailServiceConfig = {
       region: process.env.AWS_PINPOINT_REGION!,
-      fromAddress: process.env.AWS_PINPOINT_FROM_EMAIL_ADDRESS!,
+      fromAddress: process.env.FROM_EMAIL_ADDRESS!,
     }
   ) {
     // Validate configuration
     this.fromAddress = config.fromAddress;
     if (!this.fromAddress) {
       throw new Error(
-        `AWS_PINPOINT_FROM_EMAIL_ADDRESS environment variable is not set. ${config.region} 11 ${config.fromAddress}`
+        `FROM_EMAIL_ADDRESS environment variable is not set. ${config.region} 11 ${config.fromAddress}`
       );
     }
 

@@ -63,9 +63,9 @@ DB_NAME=your-db-name
 DB_SSL=true
 
 # AWS Pinpoint 配置
-AWS_PINPOINT_APPLICATION_ID=your-pinpoint-app-id
-AWS_PINPOINT_AWS_PINPOINT_FROM_EMAIL_ADDRESS=your-from-email
-MESSAGE_TRACKER_ADMIN_EMAIL_ADDRESS=your-alarm-email
+AWS_PINPOINT_REGION=us-east-1
+FROM_EMAIL_ADDRESS=your-from-email
+ADMIN_EMAIL_ADDRESS=your-admin-email
 
 # AWS 凭证
 AWS_ACCESS_KEY_ID=your-access-key
@@ -89,8 +89,8 @@ npx sst secrets set DB_USER your-db-user
 npx sst secrets set DB_PWD your-db-password
 npx sst secrets set DB_NAME your-db-name
 npx sst secrets set AWS_PINPOINT_APPLICATION_ID your-pinpoint-app-id
-npx sst secrets set AWS_PINPOINT_FROM_EMAIL_ADDRESS your-from-email
-npx sst secrets set MESSAGE_TRACKER_ADMIN_EMAIL_ADDRESS your-alarm-email
+npx sst secrets set FROM_EMAIL_ADDRESS your-from-email
+npx sst secrets set ADMIN_EMAIL_ADDRESS your-alarm-email
 npx sst secrets set AWS_ACCESS_KEY_ID your-access-key
 npx sst secrets set AWS_SECRET_ACCESS_KEY your-secret-key
 ```
