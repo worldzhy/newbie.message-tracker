@@ -25,7 +25,6 @@ export const handler: SQSHandler = async event => {
       params
     )}`;
   };
-  const senderLevel = parseInt(process.env.MESSAGE_SENDER_LEVEL || '1');
 
   // Process each SQS record
   try {
@@ -52,7 +51,6 @@ export const handler: SQSHandler = async event => {
         // Store response
         await storeMessage({
           type: messageType,
-          level: senderLevel,
           destination: sendEmailParams.toAddress,
           content: sendEmailParams.html,
           sqsMessageId: sqsRecord.messageId,
@@ -75,7 +73,6 @@ export const handler: SQSHandler = async event => {
         // Store response
         await storeMessage({
           type: messageType,
-          level: senderLevel,
           destination: SendTextMessageParams.phoneNumber,
           content: SendTextMessageParams.text,
           sqsMessageId: sqsRecord.messageId,

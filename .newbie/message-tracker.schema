@@ -22,7 +22,6 @@ model Message {
   id                      Int            @id @default(autoincrement())
   status                  String?
   type                    MessageType
-  level                   Int? // 1 - first level queue, 2 - second level queue
   destination             String?
   content                 String?
   sqsMessageId            String // When the ReceiveCount for a message exceeds the maxReceiveCount for a queue, SQS moves the message to the DLQ. The original message ID is retained.
@@ -44,8 +43,8 @@ model MessageEvent {
   event             Json
   eventType         String
   eventTime         DateTime
-  createdAt         DateTime @default(now())
   pinpointMessageId String
+  createdAt         DateTime @default(now())
   messageId         Int?
   message           Message? @relation(fields: [messageId], references: [id])
 
