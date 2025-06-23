@@ -1,10 +1,9 @@
 import {SQSHandler} from 'aws-lambda';
 import {Database} from '@message-tracker/core/database';
-import {EmailService} from '@message-tracker/core/pinpoint/email';
-import {FailedMessage, MessageType} from './interface.js';
-import {checkSqsMessageBody, MessageBody, MessageStatus} from '../utils.js';
+import {EmailService} from '@message-tracker/core/ses';
+import {checkEmailMessageBody, checkTextMessageBody} from '../utils.js';
+import {SqsMessageStatus} from './interface.js';
 
-export * from './interface.js';
 export const handler: SQSHandler = async event => {
   if (!event.Records || event.Records.length <= 0) {
     return;
@@ -16,54 +15,70 @@ export const handler: SQSHandler = async event => {
   const adminEmailAddress = process.env.ADMIN_EMAIL_ADDRESS!;
 
   // Function to store SQS message in the database
-  const markFailedMessages = async (sqsMessageIds: string[]) => {
+  const updateEmailMessages = async (sqsMessageIds: string[]) => {
     await db.sql`
-        update "microservice/message-tracker"."Message"
-        set "status" = ${MessageStatus.FAILED}
+        update "microservice/message-tracker"."EmailMessage"
+        set "sqsMessageStatus" = ${SqsMessageStatus.FAILED}
+        where "sqsMessageId" in ${db.sql(sqsMessageIds)}
+    `;
+  };
+
+  const updateTextMessages = async (sqsMessageIds: string[]) => {
+    await db.sql`
+        update "microservice/message-tracker"."TextMessage"
+        set "sqsMessageStatus" = ${SqsMessageStatus.FAILED}
         where "sqsMessageId" in ${db.sql(sqsMessageIds)}
     `;
   };
 
   try {
     // Collect failed messages
-    const failedMessages: FailedMessage[] = [];
+    const failedEmailMessages: {
+      sqsMessageId: string;
+      toAddress: string;
+      subject: string;
+      text: string;
+    }[] = [];
+    const failedTextMessages: {
+      sqsMessageId: string;
+      phoneNumber: string;
+      text: string;
+    }[] = [];
+
     for (const sqsRecord of event.Records) {
       const sqsMessageId = sqsRecord.messageId;
-      const sqsMessageBody = JSON.parse(sqsRecord.body) as MessageBody;
+      const sqsMessageBody = JSON.parse(sqsRecord.body);
 
       // Validate received message body
-      if (!checkSqsMessageBody(sqsMessageBody)) {
-        continue;
-      }
-
-      // Extract message type
-      const messageType = sqsMessageBody.type;
-
-      // Parse the message body to determine the type of message
-      if (messageType === MessageType.EMAIL) {
-        failedMessages.push({
+      if (checkEmailMessageBody(sqsMessageBody)) {
+        failedEmailMessages.push({
           sqsMessageId,
-          type: MessageType.EMAIL,
-          destination: sqsMessageBody.emailParams!.toAddress,
-          content: sqsMessageBody.emailParams!.html,
+          toAddress: sqsMessageBody.toAddress,
+          subject: sqsMessageBody.subject,
+          text: sqsMessageBody.text,
         });
-      } else if (messageType === MessageType.SMS) {
-        failedMessages.push({
+      } else if (checkTextMessageBody(sqsMessageBody)) {
+        failedTextMessages.push({
           sqsMessageId,
-          type: MessageType.SMS,
-          destination: sqsMessageBody.smsParams!.phoneNumber,
-          content: sqsMessageBody.smsParams!.text,
+          phoneNumber: sqsMessageBody.phoneNumber,
+          text: sqsMessageBody.text,
         });
       } else {
+        console.warn(`Invalid message body: ${sqsRecord.body}`);
+        continue;
       }
     }
 
     // Update messages status in database
-    await markFailedMessages(failedMessages.map(msg => msg.sqsMessageId));
+    await updateEmailMessages(failedEmailMessages.map(msg => msg.sqsMessageId));
+    await updateTextMessages(failedTextMessages.map(msg => msg.sqsMessageId));
 
     // If there are failed messages, send an email with the list
-    if (failedMessages.length > 0) {
-      const content = generateAlarmEmailHTML(failedMessages);
+    if (failedEmailMessages.length > 0 || failedTextMessages.length > 0) {
+      const content = generateAlarmEmailHTML(
+        failedEmailMessages,
+        failedTextMessages
+      );
       const emailParams = {
         toAddress: adminEmailAddress,
         subject: 'Failed Messages',
@@ -83,10 +98,14 @@ export const handler: SQSHandler = async event => {
 
 // 生成告警邮件的 HTML 内容
 function generateAlarmEmailHTML(
-  records: Array<{
-    type: string;
-    destination: string;
-    content: string;
+  emailMessages: Array<{
+    toAddress: string;
+    subject: string;
+    text: string;
+  }>,
+  textMessages: Array<{
+    phoneNumber: string;
+    text: string;
   }>
 ): string {
   let htmlStr = `
@@ -97,20 +116,37 @@ function generateAlarmEmailHTML(
             <meta charset="utf-8" />
         </head>
         <body>
-            <table>
+        <h2>Failed Email Messages</h2>    
+        <table>
                 <tr>
-                    <td>Type</td>
-                    <td>Destination</td>
-                    <td>Content</td>
+                    <td>To Address</td>
+                    <td>Subject</td>
+                    <td>Text</td>
                 </tr> 
     `;
-  for (const record of records) {
-    const {type, destination, content} = record;
+  for (const message of emailMessages) {
     htmlStr += `
             <tr>
-                <td>${type}</td>
-                <td>${destination}</td>
-                <td><pre>${content}</pre></td>
+                <td>${message.toAddress}</td>
+                <td>${message.subject}</td>
+                <td><pre>${message.text}</pre></td>
+            </tr>
+        `;
+  }
+  htmlStr += `
+            </table>
+            <h2>Failed Text Messages</h2>
+            <table>
+                <tr>
+                    <td>Phone Number</td>
+                    <td>Text</td>
+                </tr>
+    `;
+  for (const message of textMessages) {
+    htmlStr += `
+            <tr>
+                <td>${message.phoneNumber}</td>
+                <td><pre>${message.text}</pre></td>
             </tr>
         `;
   }
@@ -119,5 +155,6 @@ function generateAlarmEmailHTML(
         </body>
     </html>
     `;
+
   return htmlStr;
 }

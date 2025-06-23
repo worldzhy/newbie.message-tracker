@@ -1,31 +1,63 @@
 import {Body, Controller, Get, Post, Query} from '@nestjs/common';
 import {ApiBody, ApiTags} from '@nestjs/swagger';
 import {MessageTrackerService} from './message-tracker.service';
+import {
+  SendEmailMessageParams,
+  SendTextMessageParams,
+} from './message-tracker.interface';
 
 @ApiTags('Message Tracker')
 @Controller('message-tracker')
 export class MessageTrackerController {
   constructor(private readonly messageTrackerService: MessageTrackerService) {}
 
-  @Get('events')
-  async getEventsOfOneMessage(
-    @Query('pinpointMessageId') pinpointMessageId: string
-  ) {
-    return await this.messageTrackerService.getStatusOfOneMessage(
-      pinpointMessageId
+  @Post('messages/email')
+  async sendEmailMessage(@Body() body: SendEmailMessageParams) {
+    return await this.messageTrackerService.sendEmail(body);
+  }
+
+  @Post('messages/text')
+  async sendTextMessage(@Body() body: SendTextMessageParams) {
+    return await this.messageTrackerService.sendText(body);
+  }
+
+  @Get('status/email')
+  async getEventsOfEmailMessage(@Query('sesMessageId') sesMessageId: string) {
+    return await this.messageTrackerService.getStatusOfEmailMessage(
+      sesMessageId
     );
   }
 
-  @Post('events')
+  @Post('status/emails')
   @ApiBody({
     description: '',
     examples: {
-      a: {value: {pinpointMessageIds: ['id1', 'id2']}},
+      a: {value: {sesMessageIds: ['id1', 'id2']}},
     },
   })
-  async getEventsOfManyMessages(@Body() body: {pinpointMessageIds: string[]}) {
-    return await this.messageTrackerService.getStatusOfManyMessages(
-      body.pinpointMessageIds
+  async getEventsOfEmailMessages(@Body() body: {sesMessageIds: string[]}) {
+    return await this.messageTrackerService.getStatusOfEmailMessages(
+      body.sesMessageIds
+    );
+  }
+
+  @Get('status/text')
+  async getEventsOfTextMessage(@Query('smsMessageId') smsMessageId: string) {
+    return await this.messageTrackerService.getStatusOfTextMessage(
+      smsMessageId
+    );
+  }
+
+  @Post('status/texts')
+  @ApiBody({
+    description: '',
+    examples: {
+      a: {value: {smsMessageIds: ['id1', 'id2']}},
+    },
+  })
+  async getEventsOfTextMessages(@Body() body: {smsMessageIds: string[]}) {
+    return await this.messageTrackerService.getStatusOfTextMessages(
+      body.smsMessageIds
     );
   }
 

@@ -1,6 +1,6 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
-  "Description": "Message Tracker is a microservice that tracks messages sent by Pinpoint. It stores the messages and events in a Postgres database.",
+  "Description": "Message Tracker is a microservice that tracks messages(Email, Text). It stores the messages and events in a Postgres database.",
   "Parameters": {
     "DatabaseHost": {
       "Description": "User name of the postgres database.",
@@ -29,21 +29,18 @@
       "ConstraintDescription": "[1] Must contain 1 to 63 letters, numbers, or underscores. [2] Must begin with a letter or an underscore. Subsequent characters can be letters, underscores, or digits (0-9). [3] Can't be a word reserved by the specified database engine."
     },
 
-    "AwsPinpointRegion": {
-      "Description": "Region of the Pinpoint application.",
+    "AwsRegion": {
+      "Description": "AWS Region of SES and SMS.",
       "Type": "String",
       "Default": "us-east-1",
       "AllowedValues": ["cn-northwest-1", "us-east-1", "us-west-2"],
       "ConstraintDescription": "Must be a valid AWS region."
     },
-    "PinpointApplicationName": {
-      "Description": "Name of the Pinpoint application.",
+
+    "SesConfigurationSetName": {
+      "Description": "Name of the SES configuration set.",
       "Type": "String",
-      "Default": "MessageTracker"
-    },
-    "SESIdentityARN": {
-      "Description": "This is the FromAddress ARN. It is required during creating Pinpoint Email Channel.",
-      "Type": "String"
+      "Default": "MessageTrackerSESConfigurationSet"
     },
     "FromEmailAddress": {
       "Description": "Address that has been verified in SES.",
@@ -52,6 +49,11 @@
     "AdminEmailAddress": {
       "Description": "Address that will receive alarm emails.",
       "Type": "String"
+    },
+    "SmsConfigurationSetName": {
+      "Description": "Name of the SMS configuration set.",
+      "Type": "String",
+      "Default": "MessageTrackerSMSConfigurationSet"
     },
 
     "LambdaCodeS3BucketName": {
@@ -67,25 +69,25 @@
     "EventStreamS3Prefix": {
       "Description": "Name of the bucket using to store event stream.",
       "Type": "String",
-      "Default": "pinpoint-events/"
+      "Default": "message-events/"
     },
     "EventStreamS3ErrorOutputPrefix": {
       "Description": "Name of the bucket using to store event stream.",
       "Type": "String",
-      "Default": "pinpoint-events-errors/"
+      "Default": "message-events-errors/"
     },
 
-    "PinpointEventDeliveryStreamName": {
-      "Description": "Name of the Pinpoint message event stream.",
+    "MessageEventDeliveryStreamName": {
+      "Description": "Name of the message event stream.",
       "Type": "String",
-      "Default": "MessageTracker-pinpointevent-deliverystream"
+      "Default": "MessageTracker-message-event-deliverystream"
     },
-    "PinpointEventProcessorLambdaName": {
-      "Description": "Name of the pinpoint events processor Lambda.",
+    "MessageEventProcessorLambdaName": {
+      "Description": "Name of the message event processor Lambda.",
       "Type": "String",
-      "Default": "MessageTracker-pinpoint-event-processor"
+      "Default": "MessageTracker-message-event-processor"
     },
-    "PinpointEventProcessorLambdaCodeZipFileName": {
+    "MessageEventProcessorLambdaCodeZipFileName": {
       "Description": "Path and file name of the Lambda code zip. Example: If s3://aws-quickstart-067174804713/quickstart-message-tracker/message-event-processor.zip , then fill 'quickstart-message-tracker/message-event-processor.zip'",
       "Type": "String",
       "Default": "quickstart-message-tracker/message-event-processor.zip"
@@ -118,9 +120,9 @@
       "Default": "MessageTracker-email-sender"
     },
     "EmailSenderLambdaCodeZipFileName": {
-      "Description": "Path and file name of the Lambda code zip. Example: If s3://aws-quickstart-067174804713/quickstart-message-tracker/message-sender.zip , then fill 'quickstart-message-tracker/message-sender.zip'",
+      "Description": "Path and file name of the Lambda code zip. Example: If s3://aws-quickstart-067174804713/quickstart-message-tracker/email-sender.zip , then fill 'quickstart-message-tracker/email-sender.zip'",
       "Type": "String",
-      "Default": "quickstart-message-tracker/message-sender.zip"
+      "Default": "quickstart-message-tracker/email-sender.zip"
     },
 
     "TextSQSName": {
@@ -134,9 +136,9 @@
       "Default": "MessageTracker-text-sender"
     },
     "TextSenderLambdaCodeZipFileName": {
-      "Description": "Path and file name of the Lambda code zip. Example: If s3://aws-quickstart-067174804713/quickstart-message-tracker/message-sender.zip , then fill 'quickstart-message-tracker/message-sender.zip'",
+      "Description": "Path and file name of the Lambda code zip. Example: If s3://aws-quickstart-067174804713/quickstart-message-tracker/text-sender.zip , then fill 'quickstart-message-tracker/text-sender.zip'",
       "Type": "String",
-      "Default": "quickstart-message-tracker/message-sender.zip"
+      "Default": "quickstart-message-tracker/text-sender.zip"
     }
   },
   "Resources": {
@@ -189,9 +191,9 @@
       "Properties": {
         "Code": {
           "S3Bucket": {"Ref": "LambdaCodeS3BucketName"},
-          "S3Key": {"Ref": "PinpointEventProcessorLambdaCodeZipFileName"}
+          "S3Key": {"Ref": "MessageEventProcessorLambdaCodeZipFileName"}
         },
-        "Description": "It processes the pinpoint events from the Kinesis Firehose.",
+        "Description": "It processes the message events from the Kinesis Firehose.",
         "Environment": {
           "Variables": {
             "DB_HOST": {"Ref": "DatabaseHost"},
@@ -202,7 +204,7 @@
             "DB_SSL": true
           }
         },
-        "FunctionName": {"Ref": "PinpointEventProcessorLambdaName"},
+        "FunctionName": {"Ref": "MessageEventProcessorLambdaName"},
         "Handler": "packages/functions/src/message-event-processor/index.handler",
         "MemorySize": 256,
         "PackageType": "Zip",
@@ -274,7 +276,7 @@
     "KinesisDeliveryStream": {
       "Type": "AWS::KinesisFirehose::DeliveryStream",
       "Properties": {
-        "DeliveryStreamName": {"Ref": "PinpointEventDeliveryStreamName"},
+        "DeliveryStreamName": {"Ref": "MessageEventDeliveryStreamName"},
         "DeliveryStreamType": "DirectPut",
         "ExtendedS3DestinationConfiguration": {
           "BucketARN": {"Fn::GetAtt": ["EventStreamS3", "Arn"]},
@@ -290,7 +292,7 @@
                 [
                   "/aws/kinesisfirehose/",
                   {
-                    "Ref": "PinpointEventDeliveryStreamName"
+                    "Ref": "MessageEventDeliveryStreamName"
                   }
                 ]
               ]
@@ -310,15 +312,14 @@
       "DependsOn": ["KinesisDeliveryStreamRole", "EventStreamS3"]
     },
 
-    "PinpointApplication": {
-      "Type": "AWS::Pinpoint::App",
+    "SesConfigurationSet": {
+      "Type": "AWS::SES::ConfigurationSet",
       "Properties": {
-        "Name": {
-          "Ref": "PinpointApplicationName"
-        }
+        "Name": {"Ref": "SesConfigurationSetName"},
+        "SendingOptions": {"SendingEnabled": true}
       }
     },
-    "PinpointEmailChannelRole": {
+    "SesConfigurationSetEventDestinationRole": {
       "Type": "AWS::IAM::Role",
       "Properties": {
         "AssumeRolePolicyDocument": {
@@ -326,26 +327,25 @@
           "Statement": [
             {
               "Effect": "Allow",
-              "Principal": {
-                "Service": "pinpoint.amazonaws.com"
-              },
+              "Principal": {"Service": "ses.amazonaws.com"},
               "Action": "sts:AssumeRole"
             }
           ]
         },
         "Policies": [
           {
-            "PolicyName": "MessageTracker-pinpoint-emailchannel-role",
+            "PolicyName": "MessageTracker-DeliveryStreamPolicy",
             "PolicyDocument": {
               "Version": "2012-10-17",
               "Statement": [
                 {
                   "Effect": "Allow",
-                  "Action": [
-                    "mobileanalytics:PutEvents",
-                    "mobileanalytics:PutItems"
-                  ],
-                  "Resource": "*"
+                  "Action": ["firehose:PutRecordBatch"],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:aws:firehose:${AwsRegion}:${AWS::AccountId}:deliverystream/${KinesisDeliveryStream}"
+                    }
+                  ]
                 }
               ]
             }
@@ -353,66 +353,35 @@
         ]
       }
     },
-    "PinpointEmailChannel": {
-      "Type": "AWS::Pinpoint::EmailChannel",
+    "SesConfigurationSetEventDestination": {
+      "Type": "AWS::SES::ConfigurationSetEventDestination",
       "Properties": {
-        "ApplicationId": {"Ref": "PinpointApplication"},
-        "Enabled": true,
-        "FromAddress": {"Ref": "FromEmailAddress"},
-        "Identity": {"Ref": "SESIdentityARN"},
-        "RoleArn": {"Fn::GetAtt": ["PinpointEmailChannelRole", "Arn"]}
-      },
-      "DependsOn": ["PinpointEmailChannelRole", "PinpointApplication"]
-    },
-    "PinpointApplicationEventStream": {
-      "Type": "AWS::Pinpoint::EventStream",
-      "Properties": {
-        "ApplicationId": {"Ref": "PinpointApplication"},
-        "DestinationStreamArn": {
-          "Fn::GetAtt": ["KinesisDeliveryStream", "Arn"]
-        },
-        "RoleArn": {
-          "Fn::GetAtt": ["PinpointApplicationEventStreamRole", "Arn"]
+        "ConfigurationSetName": {"Ref": "SesConfigurationSet"},
+        "EventDestination": {
+          "Enabled": true,
+          "MatchingEventTypes": [
+            "SEND",
+            "REJECT",
+            "BOUNCE",
+            "COMPLAINT",
+            "DELIVERY",
+            "OPEN",
+            "CLICK",
+            "RENDERING_FAILURE",
+            "DELIVERY_DELAY",
+            "SUBSCRIPTION"
+          ],
+          "KinesisFirehoseDestination": {
+            "DeliveryStreamARN": {
+              "Fn::GetAtt": ["KinesisDeliveryStream", "Arn"]
+            },
+            "IAMRoleARN": {
+              "Fn::GetAtt": ["SesConfigurationSetEventDestinationRole", "Arn"]
+            }
+          }
         }
       },
-      "DependsOn": ["PinpointApplication", "PinpointApplicationEventStreamRole"]
-    },
-    "PinpointApplicationEventStreamRole": {
-      "Type": "AWS::IAM::Role",
-      "Properties": {
-        "AssumeRolePolicyDocument": {
-          "Version": "2012-10-17",
-          "Statement": [
-            {
-              "Effect": "Allow",
-              "Principal": {
-                "Service": "pinpoint.amazonaws.com"
-              },
-              "Action": "sts:AssumeRole"
-            }
-          ]
-        },
-        "Policies": [
-          {
-            "PolicyName": "MessageTracker-pinpoint-event-stream-role",
-            "PolicyDocument": {
-              "Version": "2012-10-17",
-              "Statement": [
-                {
-                  "Effect": "Allow",
-                  "Action": [
-                    "firehose:PutRecordBatch",
-                    "firehose:DescribeDeliveryStream"
-                  ],
-                  "Resource": {
-                    "Fn::GetAtt": ["KinesisDeliveryStream", "Arn"]
-                  }
-                }
-              ]
-            }
-          }
-        ]
-      }
+      "DependsOn": ["SesConfigurationSet"]
     },
 
     "FailedMessageSQS": {
@@ -467,7 +436,7 @@
         ],
         "Policies": [
           {
-            "PolicyName": "MessageTracker-failed-email-processor-lambda-role",
+            "PolicyName": "MessageTracker-failed-message-processor-lambda-role",
             "PolicyDocument": {
               "Version": "2012-10-17",
               "Statement": [
@@ -480,8 +449,7 @@
             }
           }
         ]
-      },
-      "DependsOn": ["PinpointApplication"]
+      }
     },
     "FailedMessageProcessorLambda": {
       "Type": "AWS::Lambda::Function",
@@ -499,9 +467,16 @@
             "DB_PWD": {"Ref": "DatabaseMasterUserPassword"},
             "DB_NAME": {"Ref": "DatabaseName"},
             "DB_SSL": true,
-            "AWS_PINPOINT_REGION": {"Ref": "AwsPinpointRegion"},
+            "AWS_SES_REGION": {"Ref": "AwsRegion"},
+            "AWS_SES_CONFIGURATION_SET_NAME": {
+              "Ref": "SesConfigurationSetName"
+            },
             "FROM_EMAIL_ADDRESS": {"Ref": "FromEmailAddress"},
-            "ADMIN_EMAIL_ADDRESS": {"Ref": "AdminEmailAddress"}
+            "ADMIN_EMAIL_ADDRESS": {"Ref": "AdminEmailAddress"},
+            "AWS_SMS_REGION": {"Ref": "AwsRegion"},
+            "AWS_SMS_CONFIGURATION_SET_NAME": {
+              "Ref": "SmsConfigurationSetName"
+            }
           }
         },
         "FunctionName": {
@@ -561,8 +536,7 @@
             }
           }
         ]
-      },
-      "DependsOn": ["PinpointApplication"]
+      }
     },
     "EmailSenderLambda": {
       "Type": "AWS::Lambda::Function",
@@ -580,13 +554,16 @@
             "DB_PWD": {"Ref": "DatabaseMasterUserPassword"},
             "DB_NAME": {"Ref": "DatabaseName"},
             "DB_SSL": true,
-            "AWS_PINPOINT_REGION": {"Ref": "AwsPinpointRegion"},
+            "AWS_SES_REGION": {"Ref": "AwsRegion"},
+            "AWS_SES_CONFIGURATION_SET_NAME": {
+              "Ref": "SesConfigurationSetName"
+            },
             "FROM_EMAIL_ADDRESS": {"Ref": "FromEmailAddress"},
             "ADMIN_EMAIL_ADDRESS": {"Ref": "AdminEmailAddress"}
           }
         },
         "FunctionName": {"Ref": "EmailSenderLambdaName"},
-        "Handler": "packages/functions/src/message-sender/index.handler",
+        "Handler": "packages/functions/src/email-sender/index.handler",
         "MemorySize": 256,
         "PackageType": "Zip",
         "Role": {"Fn::GetAtt": ["EmailSenderLambdaRole", "Arn"]},
@@ -640,8 +617,7 @@
             }
           }
         ]
-      },
-      "DependsOn": ["PinpointApplication"]
+      }
     },
     "TextSenderLambda": {
       "Type": "AWS::Lambda::Function",
@@ -659,11 +635,14 @@
             "DB_PWD": {"Ref": "DatabaseMasterUserPassword"},
             "DB_NAME": {"Ref": "DatabaseName"},
             "DB_SSL": true,
-            "AWS_PINPOINT_REGION": {"Ref": "AwsPinpointRegion"}
+            "AWS_SMS_REGION": {"Ref": "AwsRegion"},
+            "AWS_SMS_CONFIGURATION_SET_NAME": {
+              "Ref": "SmsConfigurationSetName"
+            }
           }
         },
         "FunctionName": {"Ref": "TextSenderLambdaName"},
-        "Handler": "packages/functions/src/message-sender/index.handler",
+        "Handler": "packages/functions/src/text-sender/index.handler",
         "MemorySize": 256,
         "PackageType": "Zip",
         "Role": {"Fn::GetAtt": ["TextSenderLambdaRole", "Arn"]},

@@ -3,8 +3,10 @@ import {Database} from '@message-tracker/core/database';
 import {S3Service} from '@message-tracker/core/s3';
 import moment from 'moment';
 import {
-  OriginalPinpointMessageEvent,
-  MessageEventCreateInput,
+  EmailMessageEvent,
+  EmailMessageEventCreateInput,
+  TextMessageEvent,
+  TextMessageEventCreateInput,
 } from './interface.js';
 
 export const handler: S3Handler = async event => {
@@ -16,18 +18,34 @@ export const handler: S3Handler = async event => {
   const db = new Database();
   const s3 = new S3Service();
 
-  // Function to store Pinpoint message events in the database
-  const storeMessageEvents = async (events: Array<MessageEventCreateInput>) => {
+  // Function to store message events in the database
+  const storeEmailMessageEvents = async (
+    events: Array<EmailMessageEventCreateInput>
+  ) => {
     if (events.length === 0) return;
 
     for (const event of events) {
       await db.sql`
-        INSERT INTO "microservice/message-tracker"."MessageEvent" ${db.sql(
+        INSERT INTO "microservice/message-tracker"."EmailMessageEvent" ${db.sql(
           event
         )}`;
     }
   };
 
+  const storeTextMessageEvents = async (
+    events: Array<TextMessageEventCreateInput>
+  ) => {
+    if (events.length === 0) return;
+
+    for (const event of events) {
+      await db.sql`
+        INSERT INTO "microservice/message-tracker"."TextMessageEvent" ${db.sql(
+          event
+        )}`;
+    }
+  };
+
+  // Main processing logic
   try {
     // Fetch the event stream file from S3
     const s3Bucket = event.Records[0].s3.bucket.name;
@@ -43,7 +61,7 @@ export const handler: S3Handler = async event => {
 
     // Split the event stream content into individual events
     const eventStrings = eventStreamContent.split('\n');
-    const originalEvents: OriginalPinpointMessageEvent[] = [];
+    const originalEvents: (EmailMessageEvent | TextMessageEvent)[] = [];
     for (const eventString of eventStrings) {
       if (eventString.length > 0) {
         originalEvents.push(JSON.parse(eventString));
@@ -51,57 +69,72 @@ export const handler: S3Handler = async event => {
     }
 
     // Process each original event to extract relevant information
-    const pinpointMessageEvents: Array<MessageEventCreateInput> = [];
+    const emailMessageEvents: Array<EmailMessageEventCreateInput> = [];
+    const textMessageEvents: Array<TextMessageEventCreateInput> = [];
+
     for (const originalEvent of originalEvents) {
-      const {event_type} = originalEvent;
-      let pinpointMessageId: string;
-
-      if (event_type.startsWith('_email')) {
-        pinpointMessageId =
-          originalEvent.facets?.email_channel?.mail_event?.mail?.message_id;
-      } else if (event_type.startsWith('_SMS')) {
-        pinpointMessageId = originalEvent.attributes?.message_id;
+      if ('mail' in originalEvent) {
+        const mailEvent = Object.fromEntries(
+          Object.entries(originalEvent).filter(
+            ([key]) => key !== 'mail' && key !== 'eventType'
+          )
+        );
+        emailMessageEvents.push({
+          eventType: originalEvent.eventType,
+          eventTime: moment(mailEvent.timestamp).toDate(),
+          event: mailEvent,
+          mail: originalEvent.mail,
+          sesMessageId: originalEvent.mail.messageId,
+        });
+      } else if (originalEvent.eventType.startsWith('TEXT_')) {
+        textMessageEvents.push({
+          eventType: originalEvent.eventType,
+          eventTime: moment(originalEvent.eventTimestamp).toDate(),
+          event: originalEvent,
+          isFinalEvent: originalEvent.isFinal,
+          messageStatus: originalEvent.messageStatus,
+          messageStatusDescription: originalEvent.messageStatusDescription,
+          smsMessageId: originalEvent.messageId,
+        });
       } else {
-        pinpointMessageId = 'unknown';
+        console.warn('Unknown event type:', originalEvent.eventType);
+        continue;
       }
-
-      pinpointMessageEvents.push({
-        event: {
-          ...originalEvent,
-          event_timestamp: moment(originalEvent.event_timestamp).toDate(),
-          arrival_timestamp: moment(originalEvent.arrival_timestamp).toDate(),
-        },
-        eventType: event_type,
-        eventTime: moment(originalEvent.event_timestamp).toDate(),
-        pinpointMessageId: pinpointMessageId,
-      });
     }
 
-    // Assign message IDs to pinpointMessageEvents
-    const pinpointMessageIds = pinpointMessageEvents
-      .filter(event => event.pinpointMessageId !== undefined)
-      .map(event => event.pinpointMessageId);
-
-    const messages = await db.sql`
-      select "id", "pinpointMessageId" from "microservice/message-tracker"."Message"
-      where "pinpointMessageId" in ${db.sql(pinpointMessageIds)}
+    // Assign message IDs then store emailMessageEvents
+    const sesMessageIds = emailMessageEvents
+      .filter(event => event.sesMessageId !== undefined)
+      .map(event => event.sesMessageId);
+    const emailMessages = await db.sql`
+      select "id", "sesMessageId" from "microservice/message-tracker"."EmailMessage"
+      where "sesMessageId" in ${db.sql(sesMessageIds)}
     `;
-
-    const messageMap = new Map(
-      messages.map(msg => [msg.pinpointMessageId, msg.id])
+    const emailMessageMap = new Map(
+      emailMessages.map(msg => [msg.sesMessageId, msg.id])
     );
-
-    pinpointMessageEvents.forEach(event => {
-      const messageId = messageMap.get(event.pinpointMessageId);
-      if (messageId) {
-        event.messageId = messageId;
-      }
+    emailMessageEvents.forEach(event => {
+      event.messageId = emailMessageMap.get(event.sesMessageId);
     });
+    await storeEmailMessageEvents(emailMessageEvents);
 
-    // Store Pinpoint message events in the database
-    await storeMessageEvents(pinpointMessageEvents);
+    // Assign message IDs then store textMessageEvents
+    const smsMessageIds = textMessageEvents
+      .filter(event => event.smsMessageId !== undefined)
+      .map(event => event.smsMessageId);
+    const textMessages = await db.sql`
+      select "id", "smsMessageId" from "microservice/message-tracker"."TextMessage"
+      where "smsMessageId" in ${db.sql(smsMessageIds)}
+    `;
+    const textMessageMap = new Map(
+      textMessages.map(msg => [msg.smsMessageId, msg.id])
+    );
+    textMessageEvents.forEach(event => {
+      event.messageId = textMessageMap.get(event.smsMessageId);
+    });
+    await storeTextMessageEvents(textMessageEvents);
   } catch (error) {
-    console.error('Error processing Pinpoint events:', error);
+    console.error('Error processing events:', error);
     throw error;
   } finally {
     await db.close();

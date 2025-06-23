@@ -18,17 +18,30 @@ export default {
         DB_NAME: process.env.DB_NAME || 'message_tracker',
         DB_SSL: process.env.DB_SSL || 'false',
 
-        AWS_PINPOINT_REGION: process.env.AWS_PINPOINT_REGION!,
+        AWS_SES_REGION: process.env.AWS_SES_REGION!,
+        AWS_SES_CONFIGURATION_SET_NAME:
+          process.env.AWS_SES_CONFIGURATION_SET_NAME || '',
         FROM_EMAIL_ADDRESS: process.env.FROM_EMAIL_ADDRESS!,
         ADMIN_EMAIL_ADDRESS: process.env.ADMIN_EMAIL_ADDRESS || '',
+
+        AWS_SMS_REGION: process.env.AWS_SMS_REGION!,
+        AWS_SMS_CONFIGURATION_SET_NAME:
+          process.env.AWS_SMS_CONFIGURATION_SET_NAME || '',
       };
 
-      // Create the  message sender function
-      const messageSender = new Function(stack, 'MessageSender', {
-        handler: 'packages/functions/src/message-sender/index.handler',
+      // Create the email sender function
+      const emailSender = new Function(stack, 'EmailSender', {
+        handler: 'packages/functions/src/email-sender/index.handler',
         timeout: '60 seconds',
         environment,
-        permissions: ['ses:SendEmail', 'sms-voice:SendTextMessage'],
+        permissions: ['ses:SendEmail'],
+      });
+
+      const textSender = new Function(stack, 'TextSender', {
+        handler: 'packages/functions/src/text-sender/index.handler',
+        timeout: '60 seconds',
+        environment,
+        permissions: ['sms-voice:SendTextMessage'],
       });
 
       // Create the event stream processor function
@@ -58,7 +71,8 @@ export default {
       );
 
       stack.addOutputs({
-        messageSenderArn: messageSender.functionArn,
+        emailSenderArn: emailSender.functionArn,
+        textSenderArn: textSender.functionArn,
         messageEventProcessorArn: messageEventProcessor.functionArn,
         failedMessageProcessorArn: failedMessageProcessor.functionArn,
       });

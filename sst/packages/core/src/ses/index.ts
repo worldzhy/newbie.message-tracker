@@ -1,10 +1,10 @@
 import {
-  PinpointEmailClient,
-  PinpointEmailClientConfig,
+  SESClient,
+  SESClientConfig,
   SendEmailCommand,
   SendEmailCommandInput,
   SendEmailCommandOutput,
-} from '@aws-sdk/client-pinpoint-email';
+} from '@aws-sdk/client-ses';
 import {promises as fs} from 'fs';
 import {join} from 'path';
 import {marked} from 'marked';
@@ -19,16 +19,19 @@ import {
 export {EmailServiceConfig, SendEmailParams, SendEmailWithTemplateParams};
 
 export class EmailService {
-  private client: PinpointEmailClient;
+  private client: SESClient;
   private fromAddress: string;
+  private configurationSetName: string | undefined;
 
   constructor(
     config: EmailServiceConfig = {
-      region: process.env.AWS_PINPOINT_REGION!,
+      region: process.env.AWS_SES_REGION!,
+      configurationSetName: process.env.AWS_SES_CONFIGURATION_SET_NAME,
       fromAddress: process.env.FROM_EMAIL_ADDRESS!,
     }
   ) {
     // Validate configuration
+    this.configurationSetName = config.configurationSetName;
     this.fromAddress = config.fromAddress;
     if (!this.fromAddress) {
       throw new Error(
@@ -36,8 +39,8 @@ export class EmailService {
       );
     }
 
-    // Create Pinpoint Client
-    const clientConfig: PinpointEmailClientConfig = {
+    // Create SES Client
+    const clientConfig: SESClientConfig = {
       region: config.region,
     };
     if (config.accessKeyId && config.secretAccessKey) {
@@ -47,7 +50,7 @@ export class EmailService {
       };
     }
 
-    this.client = new PinpointEmailClient(clientConfig);
+    this.client = new SESClient(clientConfig);
   }
 
   async sendEmail(params: SendEmailParams): Promise<SendEmailCommandOutput> {
@@ -104,28 +107,27 @@ export class EmailService {
       'toAddresses' in params ? params.toAddresses : [params.toAddress];
 
     const commandInput: SendEmailCommandInput = {
-      FromEmailAddress: this.fromAddress,
+      Source: this.fromAddress,
       Destination: {
         ToAddresses: toAddresses,
       },
-      Content: {
-        Simple: {
-          Subject: {
+      Message: {
+        Subject: {
+          Charset: 'UTF-8',
+          Data: params.subject,
+        },
+        Body: {
+          Html: {
             Charset: 'UTF-8',
-            Data: params.subject,
+            Data: params.html,
           },
-          Body: {
-            Html: {
-              Charset: 'UTF-8',
-              Data: params.html,
-            },
-            Text: {
-              Charset: 'UTF-8',
-              Data: params.text,
-            },
+          Text: {
+            Charset: 'UTF-8',
+            Data: params.text,
           },
         },
       },
+      ConfigurationSetName: this.configurationSetName,
     };
 
     return await this.client.send(new SendEmailCommand(commandInput));

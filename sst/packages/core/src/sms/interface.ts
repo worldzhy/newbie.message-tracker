@@ -14,4 +14,5 @@ export interface TextServiceConfig {
   accessKeyId?: string;
   secretAccessKey?: string;
   region: string;
+  configurationSetName?: string;
 }

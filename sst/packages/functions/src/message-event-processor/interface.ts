@@ -1,48 +1,60 @@
-export interface OriginalPinpointMessageEvent {
-  event_type: string;
-  event_timestamp: number;
-  arrival_timestamp: number;
-  event_version?: string;
-  application?: any;
-  client?: any;
-  device?: any;
-  session?: any;
-  attributes?: any;
-  metrics?: any;
-  facets?: any;
-  awsAccountId?: string;
+export interface EmailMessageEvent {
+  eventType: string;
+  mail: {
+    timestamp: string;
+    source: string;
+    sourceArn: string;
+    sendingAccountId: string;
+    messageId: string;
+    destination: string[];
+    headersTruncated: boolean;
+    headers: Object[];
+    commonHeaders: Object;
+    tags: Object;
+  };
+  open: {};
+  click: {};
 }
 
-export interface MessageEventCreateInput {
-  event: {};
+export interface EmailMessageEventCreateInput {
   eventType: string;
   eventTime: Date;
-  pinpointMessageId: string;
+  event: {};
+  mail: {};
+  sesMessageId: string;
   messageId?: number;
 }
 
-export interface S3Event {
-  Records: S3Record[];
-}
-
-export interface S3Record {
-  s3: {
-    bucket: {
-      name: string;
-    };
-    object: {
-      key: string;
-    };
+export interface TextMessageEvent {
+  eventType: string;
+  eventVersion: string;
+  eventTimestamp: number;
+  isFinal: boolean;
+  originationPhoneNumber: string;
+  destinationPhoneNumber: string;
+  isoCountryCode: string;
+  messageId: string;
+  messageRequestTimestamp: number;
+  messageEncoding: string;
+  messageType: string;
+  messageStatus: string;
+  messageStatusDescription: string;
+  totalMessageParts: number;
+  totalMessagePrice: number;
+  totalCarrierFee: number;
+  protectConfiguration: {
+    protectConfigurationId: string;
+    protectStatus: string;
   };
 }
 
-export interface EventBridgeEvent {
-  detail: {
-    bucket: {
-      name: string;
-    };
-    object: {
-      key: string;
-    };
-  };
+export interface TextMessageEventCreateInput {
+  eventType: string;
+  eventTime: Date;
+  event: {};
+  isFinalEvent: boolean;
+  messageStatus: string;
+  messageStatusDescription: string;
+  smsMessageId: string;
+  messageId?: number;
 }

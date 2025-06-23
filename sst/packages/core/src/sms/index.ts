@@ -11,13 +11,17 @@ export {SendTextMessageParams, TextServiceConfig};
 
 export class TextMessageService {
   private client: PinpointSMSVoiceV2Client;
+  private configurationSetName: string | undefined;
 
   constructor(
     config: TextServiceConfig = {
-      region: process.env.AWS_PINPOINT_REGION!,
+      region: process.env.AWS_SMS_REGION!,
+      configurationSetName: process.env.AWS_SMS_CONFIGURATION_SET_NAME!,
     }
   ) {
-    // Create Pinpoint Client
+    this.configurationSetName = config.configurationSetName;
+
+    // Create SMS Client
     const clientConfig: PinpointSMSVoiceV2ClientConfig = {
       region: config.region,
     };
@@ -38,6 +42,7 @@ export class TextMessageService {
       DestinationPhoneNumber: params.phoneNumber,
       MessageType: 'TRANSACTIONAL',
       MessageBody: params.text,
+      ConfigurationSetName: this.configurationSetName,
     };
 
     return await this.client.send(new SendTextMessageCommand(commandInput));

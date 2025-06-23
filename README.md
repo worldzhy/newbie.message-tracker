@@ -40,10 +40,11 @@ message-tracker/
 
 Overall Steps:
 
-1. Develop lambda functions with sst.
-2. Download the code of the three lambda functions.
-3. Upload the code zips to specific S3(Depends on the parameter 'LambdaCodeS3BucketName' of Cloudformation stack).
-4. Create Cloudformation Stack from AWS console.
+1. Config SES and SMS from AWS console. They both need a configuration set for tracking messages.
+2. Develop lambda functions with sst.
+3. Download the code of the three lambda functions.
+4. Upload the code zips to specific S3(Depends on the parameter 'LambdaCodeS3BucketName' of Cloudformation stack).
+5. Create Cloudformation Stack from AWS console.
 
 ### Develop Lambda
 
