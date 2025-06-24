@@ -40,11 +40,28 @@ message-tracker/
 
 Overall Steps:
 
-1. Config SES and SMS from AWS console. They both need a configuration set for tracking messages.
-2. Develop lambda functions with sst.
-3. Download the code of the three lambda functions.
-4. Upload the code zips to specific S3(Depends on the parameter 'LambdaCodeS3BucketName' of Cloudformation stack).
-5. Create Cloudformation Stack from AWS console.
+Step 1. Database
+
+- Make sure ./.newbie/message-tracker.schema is loaded in the database.
+
+Step 2. SES and SMS
+
+- Enable SES from AWS console.
+- Create identity.
+- (Configuration set will be created by CloudFormation.)
+
+- Enable End User Messaging SMS from AWS console.
+- Create registration.
+- Create a configuration set for tracking messages.
+
+Step 3. Prepare lambda codes for CloudFormation template
+
+- Create S3 bucket.
+- Upload ./infrastructure/lambda-codes/\* to the bucket.
+
+Step 4. Create stack from CloudFormation console
+
+- Use ./infrastructure/cloudformation/message-tracker-v2.template.json
 
 ### Develop Lambda
 
@@ -61,18 +78,23 @@ npm install
 cp .env.example .env
 ```
 
-3. Develop lambda:
+3. Develop Lambda functions:
 
 ```bash
 npm run dev
 ```
 
-4. Deploy lambda:
+4. Deploy Lambda functions:
 
 ```bash
-npm run build
 npm run deploy
 ```
+
+5. Download Lambda functions code.zip
+
+6. Upload code.zip to production Lambda functions.
+
+7. Update code.zip in ./infrastructure/lambda-codes/\*
 
 ## License
 
