@@ -60,24 +60,14 @@ sst/
 
 ## Environment Setup
 
-Required environment variables (via SST Config.Secret):
+1. Set AWS credentials with AdministratorAccess on your local
+
+- https://sst.dev/docs/iam-credentials/
+
+2. Create .env file
 
 ```bash
-# Database Configuration
-DB_HOST=your-db-host
-DB_PORT=5432
-DB_USER=your-db-user
-DB_PWD=your-db-password
-DB_NAME=your-db-name
-DB_SSL=true
-
-# AWS Configuration
-AWS_SES_REGION=us-east-1
-AWS_SES_CONFIGURATION_SET_NAME=MessageTrackerSESConfigurationSet
-FROM_EMAIL_ADDRESS=your-from-email
-ADMIN_EMAIL_ADDRESS=your-admin-email
-AWS_SMS_REGION=us-east-1
-AWS_SMS_CONFIGURATION_SET_NAME=MessageTrackerSMSConfigurationSet
+cp .env.example .env
 ```
 
 ## Development

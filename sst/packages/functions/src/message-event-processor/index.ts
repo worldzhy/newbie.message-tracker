@@ -45,6 +45,19 @@ export const handler: S3Handler = async event => {
     }
   };
 
+  const updateTextMessageFinalStatus = async (params: {
+    smsMessageId: string;
+    status: string;
+    statusDescription: string;
+  }) => {
+    await db.sql`
+      UPDATE "microservice/message-tracker"."TextMessage"
+      SET "status" = ${params.status},
+          "statusDescription" = ${params.statusDescription}
+      WHERE "smsMessageId" = ${params.smsMessageId}
+    `;
+  };
+
   // Main processing logic
   try {
     // Fetch the event stream file from S3
@@ -96,6 +109,15 @@ export const handler: S3Handler = async event => {
           messageStatusDescription: originalEvent.messageStatusDescription,
           smsMessageId: originalEvent.messageId,
         });
+
+        // If this is a final event, update the message status in the database
+        if (originalEvent.isFinal) {
+          await updateTextMessageFinalStatus({
+            smsMessageId: originalEvent.messageId,
+            status: originalEvent.messageStatus,
+            statusDescription: originalEvent.messageStatusDescription,
+          });
+        }
       } else {
         console.warn('Unknown event type:', originalEvent.eventType);
         continue;

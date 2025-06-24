@@ -12,11 +12,30 @@ export class MessageTrackerController {
   constructor(private readonly messageTrackerService: MessageTrackerService) {}
 
   @Post('messages/email')
+  @ApiBody({
+    description: '',
+    examples: {
+      a: {
+        value: {
+          toAddress: 'worldzhy@126.com',
+          subject: 'Hello World',
+          text: 'Hello World',
+          html: '<h1>Hello World</h1>',
+        },
+      },
+    },
+  })
   async sendEmailMessage(@Body() body: SendEmailMessageParams) {
     return await this.messageTrackerService.sendEmail(body);
   }
 
   @Post('messages/text')
+  @ApiBody({
+    description: '',
+    examples: {
+      a: {value: {phoneNumber: '+14254147755', text: 'Hello World'}},
+    },
+  })
   async sendTextMessage(@Body() body: SendTextMessageParams) {
     return await this.messageTrackerService.sendText(body);
   }
