@@ -136,7 +136,10 @@ export const handler: S3Handler = async event => {
       emailMessages.map(msg => [msg.sesMessageId, msg.id])
     );
     emailMessageEvents.forEach(event => {
-      event.messageId = emailMessageMap.get(event.sesMessageId);
+      const messageId = emailMessageMap.get(event.sesMessageId);
+      if (messageId) {
+        event.messageId = messageId;
+      }
     });
     await storeEmailMessageEvents(emailMessageEvents);
 
@@ -152,7 +155,10 @@ export const handler: S3Handler = async event => {
       textMessages.map(msg => [msg.smsMessageId, msg.id])
     );
     textMessageEvents.forEach(event => {
-      event.messageId = textMessageMap.get(event.smsMessageId);
+      const messageId = textMessageMap.get(event.smsMessageId);
+      if (messageId) {
+        event.messageId = messageId;
+      }
     });
     await storeTextMessageEvents(textMessageEvents);
   } catch (error) {

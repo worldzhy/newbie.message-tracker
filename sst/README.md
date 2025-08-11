@@ -84,11 +84,16 @@ npm install
 npm run dev
 ```
 
-3. Deploy to production:
+## Production:
+
+1. Download code.zip from the Lambda sst deployed.
 
 ```bash
+npm run build
 npm run deploy
 ```
+
+2. Upload code.zip to the Lambda you actually use.
 
 ## Tech Stack
 
