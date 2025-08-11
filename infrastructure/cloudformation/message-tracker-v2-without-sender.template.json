@@ -340,10 +340,12 @@
               "Action": "sts:AssumeRole",
               "Condition": {
                 "StringEquals": {
-                  "aws:SourceAccount": "${AWS::AccountId}"
+                  "aws:SourceAccount": {"Fn::Sub": "${AWS::AccountId}"}
                 },
                 "ArnLike": {
-                  "aws:SourceArn": "arn:aws:sms-voice:${AwsRegion}:${AWS::AccountId}:configuration-set/${SmsConfigurationSetName}"
+                  "aws:SourceArn": {
+                    "Fn::Sub": "arn:aws:sms-voice:${AwsRegion}:${AWS::AccountId}:configuration-set/${SmsConfigurationSetName}"
+                  }
                 }
               }
             }
